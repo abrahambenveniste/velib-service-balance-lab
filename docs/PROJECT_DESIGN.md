@@ -39,6 +39,7 @@ Thresholds, aggregation interval, stale-feed cutoff, and weighting rules should 
 
 - Inventory changes are net stock changes. They do not identify customer origins/destinations or distinguish customer rides from operator actions and data corrections.
 - In an initial 60.9-second comparison, reported bike/dock inventories changed at 63 stations while `last_reported` stayed unchanged at every station. Feed-level update timestamps and cache headers were absent. This is a small probe, but it means we must study the semantics and behavior of both capture time and source timestamps before deciding whether records are stale.
+- Across the six-capture baseline (under 22 minutes) plus one post-restart capture, all 1,517 status IDs joined one-to-one to station information, hashes and count fields reconciled, and all seven status bodies differed. In the 300.9-second pair, inventory changed at 253 stations while `last_reported` changed at 58. The latest capture arrived after a 706.7-second gap and had a median report age of about 22.8 minutes. These short samples validate the pipeline; they do not support weekly or seasonal reliability claims. See the [reproducible data audit](DATA_AUDIT.md).
 - Census residents are not bike-share demand. Stations can serve commuters and visitors from outside the neighbourhood containing the station.
 - Missing or stale records are unknown service, not zero bikes.
 - A before/after or simulated improvement is not causal evidence that a policy would work in the live system.
@@ -53,3 +54,4 @@ The first practical check is to compare measured outages against actual station 
 - No claims about operator efficiency without vehicle, trip, and staffing data.
 - No precise individual-level location collection. The first version can be explored by station or area without storing a rider's home/work route.
 - Weather and more detailed census attributes are optional additions after the core measures are working.
+

@@ -1,44 +1,108 @@
-# Collector operations
+# Collection and analysis operations
 
-## First setup
+## Environment and setup
 
-Python 3.11 or newer is required. From the repository root:
+Python 3.11 or newer is required. This working environment used Python 3.13.15, HTTPX 0.28.1, Windows 11 and PowerShell 7.6.5 on 21 October 2026. The project declares only HTTPX as a runtime dependency; analysis currently uses the Python standard library. From the repository root:
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -e .
-python -m velib_lab.collector --once
+.\.venv\Scripts\python.exe -m pip install -e .
+.\.venv\Scripts\python.exe -m velib_lab.collector --once
 ```
 
-Each capture fetches the GBFS discovery document and the advertised `station_status` feed, then writes their exact bodies and `capture.json` under `data/raw/YYYY-MM-DD/<capture-id>/`. The exact `station_information` body is stored separately under `data/reference/station_information/` and refreshed when it is more than 24 hours old or the advertised URL changes. Each capture records the reference path, retrieval time, hash, and station count; it does not duplicate the static metadata file. Both directories are ignored by Git. Capture metadata also stores each request's HTTP status, UTC retrieval time, hash, selected cache headers, record count, and feed TTL. Status metadata summarizes timestamp coverage, distinct station report times, and oldest/newest report ages. Capture folders are assembled before being moved into place, so a failed request does not look complete.
+No API key or credential is used. The collector uses HTTPX with a 20-second request timeout, follows redirects, and sends JSON accept and project user-agent headers. It has no explicit retry/backoff yet: a failed HTTP or JSON request raises an error and the failed cycle is not written as a complete capture.
 
-## Pilot cadence
+## Capture process and files
 
-Do not infer that a successful HTTP request represents a new station observation. The transport-data listing says the feed refreshes every minute, while the discovery document returned a TTL of 3,600 seconds and no cache headers in the initial live check. Run captures manually or at a modest interval for a short pilot, then compare response hashes, feed timestamps, and each station's `last_reported` before selecting a lasting cadence. Avoid minute-by-minute continuous capture until the pilot shows it adds new information.
+Each capture makes requests in this order:
 
-The bounded pilot command polls status every five minutes for 24 hours and refreshes station information once per day:
+1. `GET` the GBFS discovery URL.
+2. Select the advertised English feed URLs for `station_information` and `station_status`.
+3. Reuse a local station-information body if its recorded URL matches and it was retrieved less than 24 hours ago; otherwise fetch and store a new version.
+4. `GET` the current station-status feed.
+5. Write exact response bodies and `capture.json` into a temporary directory, then atomically move it into the dated capture directory.
+
+Current layout:
+
+```text
+data/
+  raw/YYYY-MM-DD/<capture-id>/
+    gbfs.json
+    station_status.json
+    capture.json
+  reference/station_information/
+    <retrieval-time>.json
+    <retrieval-time>.metadata.json
+  processed/
+    capture_summary.csv
+    station_snapshots.csv
+    audit_report.json
+  logs/
+    collector-pilot-*.stdout.log
+    collector-pilot-*.stderr.log
+```
+
+The first three older captures contain a full `station_information.json` beside the other raw bodies. After daily reference storage was implemented, captures reference a shared file in `data/reference/`. `capture.json` records capture start/finish, collector version, feed URL, HTTP status, UTC retrieval time, response SHA-256, selected response headers, TTL, station counts and report-time summary. `station_status.json` remains one raw body per poll. The station-information reference metadata records its source URL, body hash, retrieval time and record count.
+
+All `data/raw/`, `data/reference/`, `data/processed/` and `data/logs/` paths are excluded by `.gitignore`. Do not commit raw status archives, station-level normalized rows, local logs or secrets. Keep the public repository to code, documentation, and reviewed aggregate results.
+
+## Pilot cadence and monitoring
+
+The currently selected pilot command is five-minute status polling for 24 hours, with station information refreshed at most daily:
 
 ```powershell
-python -m velib_lab.collector --interval-seconds 300 --duration-hours 24
+.\.venv\Scripts\python.exe -m velib_lab.collector --interval-seconds 300 --duration-hours 24
 ```
 
-The five-minute interval is a pilot setting, not a claim that the upstream source updates at that rate. A day of status JSON is expected to use roughly 135 MB before filesystem effects; station information is stored once per refresh, not per capture. `--timeout-seconds` controls request timeouts; the default is 20 seconds. For an open-ended run, omit `--duration-hours` and stop with Ctrl+C.
+This cadence is an experiment setting, not a claim about the upstream update rate. The portal says one-minute updates, while discovery advertises `ttl=3600` and status report timestamps are often older. In the six-snapshot baseline, status JSON was about 464 KB per poll; 288 polls imply roughly 133.6 MB/day of status payloads before filesystem overhead.
 
-The first end-to-end capture completed on 20 October 2026 at 22:51 UTC: all three requests returned HTTP 200 and each station feed contained 1,517 records. The feed-level `last_updated` field and `Cache-Control`, `Age`, and `ETag` response headers were absent in that capture. A second status capture 60.9 seconds later showed inventory changes at 63 stations even though `last_reported` stayed unchanged at all 1,517. This is an early signal to investigate, not enough evidence to declare the feed defective. Subsequent captures summarize timestamp coverage and age; the first capture's metadata predates that summary, but its raw feed contains the source timestamps.
+For an attended run, keep stdout/stderr visible. For a background Windows run, write to a **run-specific** log path, record its process-tree root and UTC start time, and check the process tree and most recent capture before treating the pilot as active. The initial 24-hour run produced two captures five minutes apart, then no longer had a collector process on the next check; that run was incomplete and must not be described as a full day. A replacement began at 2026-10-20 23:25:43 UTC with `collector-pilot-rerun.*` logs; its first capture succeeded at about 23:25:45 UTC. The replacement is still in progress and has not completed 24 hours.
 
-## What is and is not collected
+Example background launch (run once, then verify one collector launch tree and its run-specific log):
 
-- Raw JSON for discovery, station information, and station status is captured with a local retrieval time.
-- Station status includes current bike counts by type, available docks, station flags, and per-station report times.
-- Station information includes station identifiers, names, coordinates, and capacity.
-- There are no trip trajectories, customer identifiers, actual operator van movements, or historical status snapshots in these endpoints.
-- Missing and stale data must be marked unknown; never convert it to zero bikes.
+```powershell
+$project = (Get-Location).Path
+$python = Join-Path $project '.venv\Scripts\python.exe'
+$stdout = Join-Path $project 'data\logs\collector-pilot-rerun.stdout.log'
+$stderr = Join-Path $project 'data\logs\collector-pilot-rerun.stderr.log'
+New-Item -ItemType Directory -Force -Path (Split-Path $stdout) | Out-Null
+$process = Start-Process -FilePath $python -ArgumentList @(
+  '-m', 'velib_lab.collector', '--interval-seconds', '300', '--duration-hours', '24'
+) -WorkingDirectory $project -WindowStyle Hidden -RedirectStandardOutput $stdout `
+  -RedirectStandardError $stderr -PassThru
+$process.Id
+```
 
-## Storage and sharing
+On this Windows setup a single `Start-Process` launch appeared as a parent/child pair with the same command line. Treat that as one launch tree; do not kill the child alone. If there are multiple independent launch trees, stop the unintended one and record the event. Never start a second independent run against the same output/log paths. After a run, inspect capture intervals, successful HTTP statuses, response hashes, station coverage, schema fields and source timestamp ages before using the observations.
 
-Raw and future processed data directories are ignored by Git. Keep data locally during the capture pilot, monitor disk use, and publish only small aggregate outputs needed to reproduce the findings. Preserve source attribution and review [ODbL terms](https://opendatacommons.org/licenses/odbl/) before redistributing a database or substantial derived dataset. Do not add credentials or personal rider-location data.
+## Reproducible local data audit
 
-## First analysis gate
+From the repository root:
 
-Before presenting reliability or service-gap statistics, require enough valid snapshots to cover multiple weeks, report missing/stale observations, define the maximum interval bridged when estimating gap duration, and compare weekday/weekend and peak/off-peak periods. A single capture validates connectivity; it says nothing about service reliability.
+```powershell
+.\.venv\Scripts\python.exe -m velib_lab.audit --input-dir data/raw --output-dir data/processed
+```
+
+The audit is implemented in `src/velib_lab/audit.py` and exposed as `velib-audit` after editable installation. It uses Python's standard library and makes no network call. For each capture it:
+
+- re-hashes the exact status and station-information bodies;
+- checks station record shape, ID uniqueness, and the two-way status/information ID join;
+- checks non-negative integer bike/dock counts, type-breakdown reconciliation, count aliases, coordinates, and capacity;
+- computes source-report age from `last_reported` minus status retrieval time without dropping old rows;
+- records distinct timestamps, missing/future/old report counts and nearest-rank age quantiles;
+- compares inventory, report timestamps, operating flags and raw response hashes with the prior capture.
+
+Outputs are `capture_summary.csv`, `station_snapshots.csv` (one joined station-time row per station per capture), and `audit_report.json`. These are generated local files, not committed. The current data dictionary specifies fields, types and transformations. The tool does not impute missing counts, bridge stockout durations or estimate demand.
+
+## Interpreting the data
+
+- A successful poll is not necessarily a new upstream station observation; compare body hashes and per-station fields.
+- Store/display capture retrieval time and `last_reported` separately.
+- Treat missing or stale status as unknown, not as zero inventory. Keep bike stockout, dock stockout, station flags and data-quality status separate.
+- A snapshot is not a trip. Inventory deltas do not reveal whether a customer rode, an operator moved a bike, maintenance removed it, or the provider corrected the feed.
+- The current seven captures span under 34 minutes, including a six-capture baseline under 22 minutes and one capture after restarting the pilot. They are suitable for ingestion/schema/freshness checks only. Before reliability estimates, collect multiple weeks and define missingness rules, stale cutoffs and the maximum gap bridged when computing durations.
+
+## Storage, licensing and attribution
+
+The public listing identifies the feed as ODbL. Keep raw and station-level transformed data local for now, attribute Vélib Métropole / Smovengo, and review share-alike requirements before distributing a derived database or substantive dataset. Do not store credentials or individual rider-location data. See [data sources and terms](DATA_AUDIT.md) and the [data dictionary](DATA_DICTIONARY.md).
+

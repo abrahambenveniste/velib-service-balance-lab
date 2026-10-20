@@ -1,33 +1,40 @@
 # Roadmap
 
-## Completed in the initial feasibility pass
+## Completed
 
-- [x] Verify the public GBFS discovery feed responds.
-- [x] Verify live station-information and station-status feeds return records without an API key.
-- [x] Implement the first snapshot collector and capture one live observation (HTTP 200; 1,517 records from both station feeds).
-- [x] Capture a second live status observation one minute later and compare inventory with per-station timestamps.
-- [x] Capture a third observation and quantify changing station inventory alongside uneven report timestamps.
-- [x] Record the current fields, record count, stated refresh cadence, and GBFS TTL discrepancy.
-- [x] Identify the missing historical archive requirement.
-- [x] Find an existing Vélib arrival-availability predictor and narrow the project away from duplicating it.
-- [x] Identify downloadable IRIS population and boundary sources for a later area analysis.
-- [x] Draft the data, research, and stack documentation locally.
+- [x] Verify the public GBFS discovery, station-information and station-status feeds respond without a key.
+- [x] Implement raw snapshot collection with UTC request times, body hashes, HTTP metadata and station-information reference reuse.
+- [x] Capture six live status observations and compare changes in inventory, source timestamps and station flags.
+- [x] Implement an offline audit that validates hashes, unique station IDs, metadata joins, count ranges, type sums, aliases, coordinates and capacity.
+- [x] Produce a normalized local station-time CSV, capture-level CSV and JSON audit report; keep all generated data Git-ignored.
+- [x] Document actual versus planned languages, APIs, tools, fields, commands, decisions and limitations in the [work log](WORKLOG.md), [data dictionary](DATA_DICTIONARY.md), [operations guide](OPERATIONS.md), and [data audit](DATA_AUDIT.md).
+- [x] Create the public repository `abrahambenveniste/velib-service-balance-lab` and publish the code and methodology.
+- [x] Identify existing availability prediction and map projects; retain the network service-balance scope.
+- [x] Identify downloadable IRIS population and boundary files for a later optional area analysis.
+
+## Current milestone
+
+1. **Complete the replacement 24-hour pilot.** It started at 2026-10-20 23:25:43 UTC using five-minute status polling, daily station-information refresh and run-specific logs. Its first capture succeeded; coverage is not complete yet. On this Windows setup, one launch appears as a parent/child Python process tree, so monitor the tree rather than treating both entries as independent collectors.
+2. **Review freshness and operational gaps.** Compare status body hashes, retrieval intervals, source report ages, station coverage and errors. Preserve stale report ages as diagnostics until timestamp semantics are confirmed.
+3. **Collect a multi-week sample.** Keep it local, record missed polls/outages/schema changes, and avoid treating repeated or stale payloads as fresh observations.
 
 ## Next milestones
 
-1. **Review the active 24-hour freshness pilot.** Status is captured every five minutes; station information refreshes daily. Compare repeated source timestamps and capture intervals before selecting a lasting cadence.
-2. **Collect a useful sample.** Keep raw captures local, log outages/schema changes, and do not mistake repeated responses for new observations.
-3. **Publish baseline service measures.** Show bike and dock access separately, identify stale data, and document spatial aggregation choices.
-4. **Validate both audiences.** Get feedback from riders and people who plan or operate shared mobility; record what helps and what misleads.
-5. **Decide whether policy simulation is supportable.** Define cargo/time constraints and demand assumptions. If assumptions dominate, keep the work descriptive until operational data or expert feedback is available.
-6. **Write the public research note and CV bullet from actual results.** Report sample period, coverage, limitations, and measured outcomes; do not claim savings or service improvements that were only simulated.
+4. **Freeze service definitions before estimating rates.** Define usable mechanical/e-bike availability, return-dock availability, station operating state, missing/stale handling and the maximum polling gap allowed when estimating a duration.
+5. **Publish a rider reliability baseline.** Report observation coverage and uncertainty with station-level no-bike/no-dock measures. Do not convert a single snapshot's zero counts into reliability or demand.
+6. **Add neighbourhood context if useful.** Align IRIS boundary and population vintages; compare point-in-polygon assignment with small walking catchments; state that residents are only a rough exposure denominator.
+7. **Validate both audiences.** Ask riders and mobility planners what would help them decide and where the measure might mislead; document feedback before designing a dashboard.
+8. **Decide if a policy simulation is supportable.** Define cargo/time constraints and demand assumptions. If assumptions dominate, keep the work descriptive until operator data or expert feedback is available.
+9. **Write a public research note and CV bullet from measured results.** State sample period, coverage, limitations and actual outcomes. Do not claim savings or service improvements that are only simulated.
 
 ## Decision log
 
-- 2026-10-21 — Direct arrival-availability predictions are already offered by PasDeVélib. The project is provisionally reframed as a network-level service-balance study with a possible constrained rebalancing simulation.
-- 2026-10-21 — Current GBFS endpoints are reachable, but their historical feed was not found. Begin prospective capture before any time-series claim.
-- 2026-10-21 — First end-to-end capture completed. Feed-level `last_updated` and HTTP cache headers were absent in the responses; station-level `last_reported` must be inspected to quantify source freshness.
-- 2026-10-21 — Two snapshots 60.9 seconds apart showed inventory changes at 63 stations but no `last_reported` changes. Keep both clocks and investigate timestamp semantics before setting stale-data rules.
-- 2026-10-21 — A third snapshot 396 seconds later showed bike/dock counts change at 342 stations and `last_reported` update at 77; the newest reported time still lagged retrieval by about 55 minutes.
-- 2026-10-21 — Created public repository `abrahambenveniste/velib-service-balance-lab`; published the overview, data audit, design, stack, operations, roadmap, and collector.
+- **2026-10-20** — Direct public GBFS discovery and station feeds responded without an API key; no dependable official history was found, so prospective collection is necessary.
+- **2026-10-20** — Two observations 60.9 seconds apart showed inventory changes at 63 stations while `last_reported` did not change. Preserve both clocks.
+- **2026-10-20** — A later comparison showed inventory changes at 343 stations and report timestamps at 77; newest report time lagged retrieval by about 55 minutes. This justified a longer freshness probe, not a stale cutoff.
+- **2026-10-21** — The six-snapshot baseline spanning under 22 minutes had 1,517 unique station IDs per snapshot and complete metadata joins. Hashes, counts, bike-type sums and aliases reconciled. Its final five-minute pair had inventory changes at 253 stations and report-time changes at 58; the second sample's report-age median was about 11 minutes.
+- **2026-10-21** — The public portal labels the feed GBFS 1.0 and says updates are each minute; discovery advertised TTL 3,600 seconds. Feed-level `last_updated` and observed cache headers were absent. Current GBFS v3 latency notes are only a diagnostic comparator for this legacy feed.
+- **2026-10-21** — The first 24-hour pilot was interrupted after two five-minute-cadence captures. The Windows parent/child process pair was initially misread as two independent runs; stopping the child ended the worker tree. Keep the original logs and captures as an incomplete run.
+- **2026-10-21** — A replacement pilot started at 23:25:43 UTC, first capture completed at 23:25:45 UTC, and the collector tree remained present at the 23:26:34 UTC check. One post-restart capture followed the prior snapshot by 706.7 seconds and is not a five-minute observation.
+- **2026-10-21** — Data audit and field dictionary added; the current seven-capture audit produced 10,619 local station-time rows, capture summary CSV and JSON integrity report, all ignored by Git.
 
