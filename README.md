@@ -45,7 +45,7 @@ python -m pip install -e .
 python -m velib_lab.collector --once
 ```
 
-The first capture is written below `data/raw/` with the exact feed responses and a metadata file. Raw snapshots are ignored by Git. Start with single captures; use the [operations guide](docs/OPERATIONS.md) before enabling continuous polling.
+Each capture stores the exact discovery and status responses below `data/raw/`; station information is stored separately and refreshed every 24 hours. Raw and reference data are ignored by Git. See the [operations guide](docs/OPERATIONS.md) for the bounded pilot command.
 
 The source and documentation are published in the dedicated [public GitHub repository](https://github.com/abrahambenveniste/velib-service-balance-lab). Raw snapshots remain local and Git-ignored.
 
