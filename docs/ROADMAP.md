@@ -6,6 +6,7 @@
 - [x] Verify live station-information and station-status feeds return records without an API key.
 - [x] Implement the first snapshot collector and capture one live observation (HTTP 200; 1,517 records from both station feeds).
 - [x] Capture a second live status observation one minute later and compare inventory with per-station timestamps.
+- [x] Capture a third observation and quantify changing station inventory alongside uneven report timestamps.
 - [x] Record the current fields, record count, stated refresh cadence, and GBFS TTL discrepancy.
 - [x] Identify the missing historical archive requirement.
 - [x] Find an existing Vélib arrival-availability predictor and narrow the project away from duplicating it.
@@ -27,4 +28,5 @@
 - 2026-10-21 — Current GBFS endpoints are reachable, but their historical feed was not found. Begin prospective capture before any time-series claim.
 - 2026-10-21 — First end-to-end capture completed. Feed-level `last_updated` and HTTP cache headers were absent in the responses; station-level `last_reported` must be inspected to quantify source freshness.
 - 2026-10-21 — Two snapshots 60.9 seconds apart showed inventory changes at 63 stations but no `last_reported` changes. Keep both clocks and investigate timestamp semantics before setting stale-data rules.
+- 2026-10-21 — A third snapshot 396 seconds later showed bike/dock counts change at 342 stations and `last_reported` update at 77; the newest reported time still lagged retrieval by about 55 minutes.
 - 2026-10-21 — Created public repository `abrahambenveniste/velib-service-balance-lab`; published the overview, data audit, design, stack, operations, roadmap, and collector.
