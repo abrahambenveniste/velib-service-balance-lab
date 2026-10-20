@@ -14,14 +14,12 @@
 
 ## Next milestones
 
-1. **Choose repository and finalize the research question.** A dedicated public GitHub repository is recommended; the connected GitHub account currently has repositories for other projects, and the available connector cannot create a repository.
-2. **Observe feed freshness.** Check repeated source timestamps and the effects of polling intervals before running a long-lived collector.
-3. **Start durable snapshot capture.** Set a conservative cadence, log outages/schema changes, and keep raw data out of Git.
-4. **Accumulate a useful sample.** Build several weeks of weekday/weekend and peak/off-peak observations before making reliability claims.
-5. **Publish baseline service measures.** Show bike and dock access separately, identify stale data, and document spatial aggregation choices.
-6. **Decide whether policy simulation is supportable.** Define cargo/time constraints and the demand assumptions. If assumptions dominate the result, keep the work descriptive until operational data or expert feedback is available.
-7. **Validate usefulness with people who ride or plan mobility.** Record what they find useful, what misleads them, and what should change.
-8. **Write the public research note and CV bullet from actual results.** Report sample period, coverage, limitations, and measured outcomes; do not claim savings or service improvements that were only simulated.
+1. **Run a structured freshness pilot.** Compare repeated source timestamps and capture intervals before selecting a lasting cadence.
+2. **Collect a useful sample.** Keep raw captures local, log outages/schema changes, and do not mistake repeated responses for new observations.
+3. **Publish baseline service measures.** Show bike and dock access separately, identify stale data, and document spatial aggregation choices.
+4. **Validate both audiences.** Get feedback from riders and people who plan or operate shared mobility; record what helps and what misleads.
+5. **Decide whether policy simulation is supportable.** Define cargo/time constraints and demand assumptions. If assumptions dominate, keep the work descriptive until operational data or expert feedback is available.
+6. **Write the public research note and CV bullet from actual results.** Report sample period, coverage, limitations, and measured outcomes; do not claim savings or service improvements that were only simulated.
 
 ## Decision log
 
@@ -29,4 +27,4 @@
 - 2026-10-21 — Current GBFS endpoints are reachable, but their historical feed was not found. Begin prospective capture before any time-series claim.
 - 2026-10-21 — First end-to-end capture completed. Feed-level `last_updated` and HTTP cache headers were absent in the responses; station-level `last_reported` must be inspected to quantify source freshness.
 - 2026-10-21 — Two snapshots 60.9 seconds apart showed inventory changes at 63 stations but no `last_reported` changes. Keep both clocks and investigate timestamp semantics before setting stale-data rules.
-- 2026-10-21 — A dedicated GitHub repository is preferable to adding an unrelated project to the existing weather-market-making or F1 repositories.
+- 2026-10-21 — Created public repository `abrahambenveniste/velib-service-balance-lab`; published the overview, data audit, design, stack, operations, roadmap, and collector.
