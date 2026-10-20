@@ -6,7 +6,7 @@ import argparse
 import hashlib
 import json
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
@@ -125,7 +125,90 @@ def station_timestamp_summary(
     }
 
 
-def capture_once(output_dir: Path, timeout_seconds: float) -> Path:
+def relative_to_working_directory(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(Path.cwd().resolve()).as_posix()
+    except ValueError:
+        return path.resolve().as_posix()
+
+
+def write_json_atomic(path: Path, value: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with TemporaryDirectory(prefix=f".{path.name}-", dir=path.parent) as temp_name:
+        temp_path = Path(temp_name) / path.name
+        temp_path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        temp_path.replace(path)
+
+
+def write_bytes_atomic(path: Path, body: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with TemporaryDirectory(prefix=f".{path.name}-", dir=path.parent) as temp_name:
+        temp_path = Path(temp_name) / path.name
+        temp_path.write_bytes(body)
+        temp_path.replace(path)
+
+
+def get_station_information(
+    client: httpx.Client,
+    url: str,
+    reference_dir: Path,
+    refresh_hours: float,
+) -> tuple[dict[str, Any], str, bool]:
+    now = utc_now()
+    for metadata_path in sorted(reference_dir.glob("*.metadata.json"), reverse=True):
+        try:
+            saved = json.loads(metadata_path.read_text(encoding="utf-8"))
+            retrieved = datetime.fromisoformat(saved["retrieved_at_utc"].replace("Z", "+00:00"))
+            data_path = metadata_path.with_name(saved["data_filename"])
+            fresh = timedelta(0) <= now - retrieved < timedelta(hours=refresh_hours)
+            if saved.get("url") == url and fresh and data_path.is_file():
+                body = data_path.read_bytes()
+                payload = json.loads(body)
+                if isinstance(payload, dict):
+                    return (
+                        {
+                            **saved,
+                            "payload": payload,
+                            "source_path": relative_to_working_directory(data_path),
+                        },
+                        relative_to_working_directory(data_path),
+                        False,
+                    )
+        except (OSError, KeyError, ValueError, TypeError, json.JSONDecodeError):
+            continue
+
+    body, request = fetch_json(client, url)
+    payload = request.pop("payload")
+    if not isinstance(payload, dict):
+        raise ValueError("Station-information feed must be a JSON object")
+    captured_at = datetime.fromisoformat(request["retrieved_at_utc"].replace("Z", "+00:00"))
+    data_filename = captured_at.strftime("%Y%m%dT%H%M%S") + f"{captured_at.microsecond:06d}Z.json"
+    data_path = reference_dir / data_filename
+    metadata_path = reference_dir / f"{data_filename.removesuffix('.json')}.metadata.json"
+    metadata = {
+        **request,
+        "data_filename": data_filename,
+        "record_count": station_record_count(payload),
+        "feed_ttl": payload.get("ttl"),
+    }
+    write_bytes_atomic(data_path, body)
+    write_json_atomic(metadata_path, metadata)
+    return (
+        {
+            **metadata,
+            "payload": payload,
+            "source_path": relative_to_working_directory(data_path),
+        },
+        relative_to_working_directory(data_path),
+        True,
+    )
+
+
+def capture_once(
+    output_dir: Path,
+    timeout_seconds: float,
+    station_info_refresh_hours: float = 24,
+) -> Path:
     started = utc_now()
     capture_id = started.strftime("%Y%m%dT%H%M%S") + f"{started.microsecond:06d}Z"
     requests: dict[str, dict[str, Any]] = {}
@@ -142,24 +225,40 @@ def capture_once(output_dir: Path, timeout_seconds: float) -> Path:
         requests["gbfs"] = discovery_request
         ttl, feeds = advertised_feeds(discovery_payload)
 
-        for feed_name in REQUIRED_FEEDS:
-            body, request = fetch_json(client, feeds[feed_name])
-            payload = request.pop("payload")
-            raw[f"{feed_name}.json"] = body
-            feed_metadata = {
-                **request,
-                "record_count": station_record_count(payload),
-                "feed_last_updated": payload.get("last_updated"),
-                "feed_ttl": payload.get("ttl"),
-            }
-            if feed_name == "station_status":
-                retrieved_at = datetime.fromisoformat(
-                    request["retrieved_at_utc"].replace("Z", "+00:00")
-                )
-                feed_metadata["station_report_timestamps"] = station_timestamp_summary(
-                    payload, retrieved_at
-                )
-            requests[feed_name] = feed_metadata
+        station_info, info_path, info_refreshed = get_station_information(
+            client,
+            feeds["station_information"],
+            output_dir.parent / "reference" / "station_information",
+            station_info_refresh_hours,
+        )
+        info_payload = station_info.pop("payload")
+        requests["station_information"] = {
+            "url": station_info["url"],
+            "source_path": info_path,
+            "retrieved_at_utc": station_info["retrieved_at_utc"],
+            "body_sha256": station_info["body_sha256"],
+            "http_status": station_info["http_status"],
+            "record_count": station_record_count(info_payload),
+            "feed_ttl": info_payload.get("ttl"),
+            "refreshed_this_capture": info_refreshed,
+        }
+
+        body, request = fetch_json(client, feeds["station_status"])
+        payload = request.pop("payload")
+        raw["station_status.json"] = body
+        status_metadata = {
+            **request,
+            "record_count": station_record_count(payload),
+            "feed_last_updated": payload.get("last_updated"),
+            "feed_ttl": payload.get("ttl"),
+        }
+        retrieved_at = datetime.fromisoformat(
+            request["retrieved_at_utc"].replace("Z", "+00:00")
+        )
+        status_metadata["station_report_timestamps"] = station_timestamp_summary(
+            payload, retrieved_at
+        )
+        requests["station_status"] = status_metadata
 
     finished = utc_now()
     metadata = {
@@ -172,6 +271,7 @@ def capture_once(output_dir: Path, timeout_seconds: float) -> Path:
         "notes": [
             "Raw feed bodies are preserved; record counts are descriptive only.",
             "A captured snapshot is not a trip record and cannot identify why inventory changed.",
+            "Station information is referenced from a separately stored daily snapshot to reduce duplication.",
         ],
     }
 
@@ -207,20 +307,46 @@ def parse_args() -> argparse.Namespace:
         help="pause between captures in continuous mode (default: 300)",
     )
     parser.add_argument("--timeout-seconds", type=float, default=20)
+    parser.add_argument(
+        "--station-info-refresh-hours",
+        type=float,
+        default=24,
+        help="maximum age of the separately stored station-information snapshot (default: 24)",
+    )
+    parser.add_argument(
+        "--duration-hours",
+        type=float,
+        help="stop continuous capture after this many hours",
+    )
     args = parser.parse_args()
-    if args.interval_seconds <= 0 or args.timeout_seconds <= 0:
-        parser.error("interval and timeout must be positive")
+    if args.interval_seconds <= 0 or args.timeout_seconds <= 0 or args.station_info_refresh_hours <= 0:
+        parser.error("interval, timeout, and station-information refresh must be positive")
+    if args.duration_hours is not None and args.duration_hours <= 0:
+        parser.error("duration must be positive")
+    if args.once and args.duration_hours is not None:
+        parser.error("--once and --duration-hours cannot be used together")
     return args
 
 
 def main() -> None:
     args = parse_args()
+    stop_at = time.monotonic() + args.duration_hours * 3600 if args.duration_hours else None
     while True:
-        path = capture_once(args.output_dir, args.timeout_seconds)
+        path = capture_once(
+            args.output_dir,
+            args.timeout_seconds,
+            args.station_info_refresh_hours,
+        )
         print(path.as_posix(), flush=True)
         if args.once:
             return
-        time.sleep(args.interval_seconds)
+        if stop_at is None:
+            time.sleep(args.interval_seconds)
+            continue
+        remaining = stop_at - time.monotonic()
+        if remaining <= 0:
+            return
+        time.sleep(min(args.interval_seconds, remaining))
 
 
 if __name__ == "__main__":
