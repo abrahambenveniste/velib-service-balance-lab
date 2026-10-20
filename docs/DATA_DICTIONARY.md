@@ -1,6 +1,6 @@
 # Data dictionary and provenance
 
-**Source checked:** 20–21 October 2026. **Captured sample:** seven local snapshots from 20 October 2026 UTC: a six-snapshot baseline plus one replacement-pilot capture after a process interruption. The source is the operator-hosted Vélib Métropole GBFS endpoint listed by [transport.data.gouv.fr](https://transport.data.gouv.fr/datasets/velib-velos-et-bornes-disponibilite-temps-reel).
+**Source checked:** 20–21 October 2026. **Captured sample:** eight local snapshots from 20 October 2026 UTC: a six-snapshot baseline plus two replacement-pilot captures after a process interruption. The source is the operator-hosted Vélib Métropole GBFS endpoint listed by [transport.data.gouv.fr](https://transport.data.gouv.fr/datasets/velib-velos-et-bornes-disponibilite-temps-reel).
 
 ## Source feeds
 
@@ -51,7 +51,7 @@ The capture manifest adds local `capture_started_at_utc` and request `retrieved_
 `python -m velib_lab.audit` writes ignored local outputs under `data/processed/`:
 
 - `station_snapshots.csv`: one row per status station per capture, joined to that capture's station-information snapshot. It includes capture and retrieval times, station identity/location/capacity, mechanical/e-bike/other breakdown, total bikes, available docks, operating flags, report epoch and UTC, and report age in seconds.
-- `capture_summary.csv`: one row per capture with response hashes and bytes, record and join counts, totals and zero-count stations, field-quality counters, report-age quantiles, and comparisons with the previous capture.
+- `capture_summary.csv`: one row per capture with response hashes and bytes, record and join counts, totals and zero-count stations, field-quality counters, report-age quantiles, and comparisons with the previous capture, including newly-zero, recovered and persistently-zero bike/dock states.
 - `audit_report.json`: machine-readable run manifest, field-name unions, and global integrity results.
 
 For report-age quantiles the audit uses the nearest-rank method: sort valid ages and select rank `ceil(p*n)` for percentile `p`. Future or invalid timestamps are counted separately. Count errors, ID mismatches, alias disagreements and type-total discrepancies are reported; the audit does not fill missing values with zero.

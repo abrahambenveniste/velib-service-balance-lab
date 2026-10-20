@@ -56,7 +56,7 @@ The currently selected pilot command is five-minute status polling for 24 hours,
 
 This cadence is an experiment setting, not a claim about the upstream update rate. The portal says one-minute updates, while discovery advertises `ttl=3600` and status report timestamps are often older. In the six-snapshot baseline, status JSON was about 464 KB per poll; 288 polls imply roughly 133.6 MB/day of status payloads before filesystem overhead.
 
-For an attended run, keep stdout/stderr visible. For a background Windows run, write to a **run-specific** log path, record its process-tree root and UTC start time, and check the process tree and most recent capture before treating the pilot as active. The initial 24-hour run produced two captures five minutes apart, then no longer had a collector process on the next check; that run was incomplete and must not be described as a full day. A replacement began at 2026-10-20 23:25:43 UTC with `collector-pilot-rerun.*` logs; its first capture succeeded at about 23:25:45 UTC. The replacement is still in progress and has not completed 24 hours.
+For an attended run, keep stdout/stderr visible. For a background Windows run, write to a **run-specific** log path, record its process-tree root and UTC start time, and check the process tree and most recent capture before treating the pilot as active. The initial 24-hour run produced two captures five minutes apart, then no longer had a collector process on the next check; that run was incomplete and must not be described as a full day. A replacement began at 2026-10-20 23:25:43 UTC with `collector-pilot-rerun.*` logs. It had two successful captures by 23:30:45 UTC, 300.9 seconds apart, and was still running with empty stderr at 23:31:03 UTC. The replacement has not completed 24 hours.
 
 Example background launch (run once, then verify one collector launch tree and its run-specific log):
 
@@ -100,7 +100,7 @@ Outputs are `capture_summary.csv`, `station_snapshots.csv` (one joined station-t
 - Store/display capture retrieval time and `last_reported` separately.
 - Treat missing or stale status as unknown, not as zero inventory. Keep bike stockout, dock stockout, station flags and data-quality status separate.
 - A snapshot is not a trip. Inventory deltas do not reveal whether a customer rode, an operator moved a bike, maintenance removed it, or the provider corrected the feed.
-- The current seven captures span under 34 minutes, including a six-capture baseline under 22 minutes and one capture after restarting the pilot. They are suitable for ingestion/schema/freshness checks only. Before reliability estimates, collect multiple weeks and define missingness rules, stale cutoffs and the maximum gap bridged when computing durations.
+- The current eight captures span under 39 minutes, including a six-capture baseline under 22 minutes and two replacement-pilot captures. They are suitable for ingestion/schema/freshness checks only. Before reliability estimates, collect multiple weeks and define missingness rules, stale cutoffs and the maximum gap bridged when computing durations.
 
 ## Storage, licensing and attribution
 

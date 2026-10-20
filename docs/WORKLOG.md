@@ -73,7 +73,16 @@ The first 24-hour run began at approximately **2026-10-20 23:08:49 UTC**. It pro
 5. This new sample arrived **706.7 seconds** after the prior capture because of the interrupted run/restart. Do not describe that pair as a five-minute interval. The earlier 300.9-second pair remains the only complete regular five-minute comparison at this point.
 6. The new capture had 19,878 total reported bikes (11,772 mechanical; 8,106 e-bikes), 28,297 available docks, 59 zero-bike stations and 68 zero-dock stations. Its `last_reported` p50 age was 1,365.1 seconds; all 1,517 timestamps were older than 15 minutes, 17 older than one hour and 14 older than 24 hours. This is a different point-in-time snapshot, not a change estimate over a standard poll interval.
 
-The replacement run is active but its 24-hour coverage is not yet complete. Continue to record each run's start, latest successful capture, log path, process-tree state, gaps and final stop time.
+### 20 October 2026 UTC — five-minute follow-up
+
+1. At **23:31:03 UTC**, verified the replacement process tree was still present and its stderr log remained empty. Stdout contained a second capture, `20261020T233045095136Z`, retrieved at about 23:30:45 UTC.
+2. Its status retrieval was **300.9 seconds** after the first replacement capture. This is a second observed five-minute interval with a distinct status-body hash and 1,517 station rows.
+3. Added zero-bike and zero-dock state-transition counters to `src/velib_lab/audit.py`: newly zero, recovered from zero and zero in both snapshots. These counts compare two point observations; they are not durations.
+4. Re-ran the audit across **eight captures / 12,136 station-time rows**. Discovery, status and station-information hashes matched; IDs/joins, count/type totals, aliases, flags, coordinates and capacities still passed.
+5. Between the two replacement captures, bikes went from 19,878 to 19,865 (11,772→11,777 mechanical; 8,106→8,088 e-bike), and available docks went from 28,297 to 28,310. Inventory changed at 220 stations; `last_reported` changed at 58; both changed at 10. Zero-bike counts were 59 in both captures: 3 newly zero, 3 recovered, 56 zero in both. Zero-dock counts were 68 then 67: 1 newly zero, 2 recovered, 66 zero in both. Net count changes do not identify individual trips or operator actions.
+6. The second replacement sample's report-age p50 was **1,671.9 seconds** and p90 **1,937.9 seconds**; all 1,517 reports were over 15 minutes old, 17 over one hour and 14 over 24 hours. No timestamps were missing or future-dated.
+
+The replacement run has two successful captures and remains active, but its 24-hour coverage is not complete. Its run-specific stdout/stderr files are under ignored `data/logs/`. Continue to record each poll, any missed interval or schema change, and the final stop time.
 
 ## Ongoing decision log
 

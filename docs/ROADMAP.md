@@ -14,7 +14,7 @@
 
 ## Current milestone
 
-1. **Complete the replacement 24-hour pilot.** It started at 2026-10-20 23:25:43 UTC using five-minute status polling, daily station-information refresh and run-specific logs. Its first capture succeeded; coverage is not complete yet. On this Windows setup, one launch appears as a parent/child Python process tree, so monitor the tree rather than treating both entries as independent collectors.
+1. **Complete the replacement 24-hour pilot.** It started at 2026-10-20 23:25:43 UTC using five-minute status polling, daily station-information refresh and run-specific logs. Two captures succeeded by 23:30:45 UTC, 300.9 seconds apart; coverage is not complete yet. On this Windows setup, one launch appears as a parent/child Python process tree, so monitor the tree rather than treating both entries as independent collectors.
 2. **Review freshness and operational gaps.** Compare status body hashes, retrieval intervals, source report ages, station coverage and errors. Preserve stale report ages as diagnostics until timestamp semantics are confirmed.
 3. **Collect a multi-week sample.** Keep it local, record missed polls/outages/schema changes, and avoid treating repeated or stale payloads as fresh observations.
 
@@ -35,6 +35,6 @@
 - **2026-10-21** — The six-snapshot baseline spanning under 22 minutes had 1,517 unique station IDs per snapshot and complete metadata joins. Hashes, counts, bike-type sums and aliases reconciled. Its final five-minute pair had inventory changes at 253 stations and report-time changes at 58; the second sample's report-age median was about 11 minutes.
 - **2026-10-21** — The public portal labels the feed GBFS 1.0 and says updates are each minute; discovery advertised TTL 3,600 seconds. Feed-level `last_updated` and observed cache headers were absent. Current GBFS v3 latency notes are only a diagnostic comparator for this legacy feed.
 - **2026-10-21** — The first 24-hour pilot was interrupted after two five-minute-cadence captures. The Windows parent/child process pair was initially misread as two independent runs; stopping the child ended the worker tree. Keep the original logs and captures as an incomplete run.
-- **2026-10-21** — A replacement pilot started at 23:25:43 UTC, first capture completed at 23:25:45 UTC, and the collector tree remained present at the 23:26:34 UTC check. One post-restart capture followed the prior snapshot by 706.7 seconds and is not a five-minute observation.
-- **2026-10-21** — Data audit and field dictionary added; the current seven-capture audit produced 10,619 local station-time rows, capture summary CSV and JSON integrity report, all ignored by Git.
+- **2026-10-21** — A replacement pilot started at 23:25:43 UTC; captures completed near 23:25:45 and 23:30:45 UTC, with the process tree present and stderr empty at 23:31:03 UTC. The first post-restart capture followed the prior snapshot by 706.7 seconds; the next was 300.9 seconds later.
+- **2026-10-21** — The audit and field dictionary were added. The current eight-capture audit produces 12,136 local station-time rows, a capture summary CSV and a JSON integrity report, all ignored by Git. State-transition counters distinguish new/recovered/persistent zero-bike and zero-dock observations without estimating duration.
 

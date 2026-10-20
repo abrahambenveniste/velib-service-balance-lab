@@ -412,6 +412,12 @@ def add_sequential_comparisons(
                     "inventory_and_timestamp_both_changed_station_count_from_previous": None,
                     "station_flag_changed_station_count_from_previous": None,
                     "status_body_same_as_previous": None,
+                    "new_zero_bike_station_count_from_previous": None,
+                    "zero_bike_station_recovered_count_from_previous": None,
+                    "persistent_zero_bike_station_count_from_previous": None,
+                    "new_zero_dock_station_count_from_previous": None,
+                    "zero_dock_station_recovered_count_from_previous": None,
+                    "persistent_zero_dock_station_count_from_previous": None,
                 }
             )
             continue
@@ -431,6 +437,10 @@ def add_sequential_comparisons(
         timestamps_changed = 0
         both_changed = 0
         flags_changed = 0
+        prior_zero_bikes: set[str] = set()
+        current_zero_bikes: set[str] = set()
+        prior_zero_docks: set[str] = set()
+        current_zero_docks: set[str] = set()
         for key in common:
             old, new = prior[key], current[key]
             old_inventory = (old.get("num_bikes_available"), old.get("num_docks_available"))
@@ -445,6 +455,14 @@ def add_sequential_comparisons(
             timestamps_changed += timestamp_diff
             both_changed += inventory_diff and timestamp_diff
             flags_changed += flag_diff
+            if valid_count(old.get("num_bikes_available")) and old.get("num_bikes_available") == 0:
+                prior_zero_bikes.add(key)
+            if valid_count(new.get("num_bikes_available")) and new.get("num_bikes_available") == 0:
+                current_zero_bikes.add(key)
+            if valid_count(old.get("num_docks_available")) and old.get("num_docks_available") == 0:
+                prior_zero_docks.add(key)
+            if valid_count(new.get("num_docks_available")) and new.get("num_docks_available") == 0:
+                current_zero_docks.add(key)
         summary.update(
             {
                 "inventory_changed_station_count_from_previous": inventory_changed,
@@ -453,6 +471,24 @@ def add_sequential_comparisons(
                 "station_flag_changed_station_count_from_previous": flags_changed,
                 "status_body_same_as_previous": prior_context["status_hash"]
                 == current_context["status_hash"],
+                "new_zero_bike_station_count_from_previous": len(
+                    current_zero_bikes - prior_zero_bikes
+                ),
+                "zero_bike_station_recovered_count_from_previous": len(
+                    prior_zero_bikes - current_zero_bikes
+                ),
+                "persistent_zero_bike_station_count_from_previous": len(
+                    prior_zero_bikes & current_zero_bikes
+                ),
+                "new_zero_dock_station_count_from_previous": len(
+                    current_zero_docks - prior_zero_docks
+                ),
+                "zero_dock_station_recovered_count_from_previous": len(
+                    prior_zero_docks - current_zero_docks
+                ),
+                "persistent_zero_dock_station_count_from_previous": len(
+                    prior_zero_docks & current_zero_docks
+                ),
             }
         )
 

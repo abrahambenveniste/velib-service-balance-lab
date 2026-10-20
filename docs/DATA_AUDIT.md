@@ -1,10 +1,10 @@
 # Data and API audit
 
-**Source access checked:** 20 October 2026. **Snapshot analysis:** seven captures retrieved from 20 October 2026 22:51:59.572 UTC through 23:25:45 UTC. The first six are the short baseline; the seventh was the first capture after restarting the interrupted 24-hour pilot. **Purpose:** establish access and data quality before making any reliability or policy claim.
+**Source access checked:** 20 October 2026. **Snapshot analysis:** eight captures retrieved from 20 October 2026 22:51:59.572 UTC through 23:30:45 UTC. The first six are the short baseline; the last two are the first captures after restarting the interrupted 24-hour pilot. **Purpose:** establish access and data quality before making any reliability or policy claim.
 
 ## 1. Live feed access
 
-The operator GBFS source is linked from the [official Vélib open-data listing](https://transport.data.gouv.fr/datasets/velib-velos-et-bornes-disponibilite-temps-reel). All three feeds were reachable by unauthenticated HTTPS `GET`; each station feed returned HTTP 200 and 1,517 rows in all seven captures.
+The operator GBFS source is linked from the [official Vélib open-data listing](https://transport.data.gouv.fr/datasets/velib-velos-et-bornes-disponibilite-temps-reel). All three feeds were reachable by unauthenticated HTTPS `GET`. Each of the eight station-status captures returned HTTP 200 and 1,517 rows; each station-information retrieval/reference contained 1,517 rows.
 
 | Feed | URL | Role | Observed result |
 |---|---|---|---|
@@ -27,14 +27,15 @@ These are **one-time network snapshots**, not rates of service, trip counts or d
 | 23:08:57.467 | 36.6 | 19,774 (11,735 / 8,039) | 28,403 | 58 | 61 | 6.1 | 1,116 |
 | 23:13:58.382 | 300.9 | 19,773 (11,735 / 8,038) | 28,403 | 58 | 63 | 11.0 | 1,517 |
 | 23:25:45 | 706.7 | 19,878 (11,772 / 8,106) | 28,297 | 59 | 68 | 22.8 | 1,517 |
+| 23:30:45 | 300.9 | 19,865 (11,777 / 8,088) | 28,310 | 59 | 67 | 27.9 | 1,517 |
 
-All seven status payload hashes were distinct. In each snapshot, 1,517 unique status station IDs joined one-to-one to 1,517 station-information IDs. Status JSON bodies were 463,945–463,965 bytes. At 288 five-minute polls per day, that observed size implies about **133.6 MB/day** of status bodies before filesystem overhead, plus small discovery and metadata files.
+All eight status payload hashes were distinct. In each snapshot, 1,517 unique status station IDs joined one-to-one to 1,517 station-information IDs. Status JSON bodies were 463,945–463,965 bytes. At 288 five-minute polls per day, that observed size implies about **133.6 MB/day** of status bodies before filesystem overhead, plus small discovery and metadata files.
 
-The first five-minute-cadence pair was 300.9 seconds apart. Bike or dock counts changed at **253 of 1,517 stations**; `last_reported` changed at **58**, and both inventory and timestamp changed at **8**. The final two captures were 706.7 seconds apart because the first pilot was interrupted and restarted; inventory changed at 407 stations and `last_reported` at none across that longer gap. The inventory changes show the feed is dynamic. Their partial overlap with report-time changes shows `last_reported` should not be treated as a proxy for inventory-change time.
+Two measured five-minute pairs are now available. In the baseline pair, 300.9 seconds apart, bike or dock counts changed at **253 of 1,517 stations**; `last_reported` changed at **58**, and both inventory and timestamp changed at **8**. In the replacement-run pair, also 300.9 seconds apart, inventory changed at **220 stations**, report timestamps at **58**, and both at **10**. Three stations newly reported zero bikes while three recovered; 56 remained at zero in both snapshots. One newly reported zero docks while two recovered; 66 remained at zero. These are observed state transitions across one interval, not gap durations. The gap between the interrupted run and its restart was 706.7 seconds; across it inventory changed at 407 stations and `last_reported` at none. The inventory changes show the feed is dynamic. Their partial overlap with report-time changes shows `last_reported` should not be treated as a proxy for inventory-change time.
 
 ### Integrity and field checks
 
-The reusable audit (`python -m velib_lab.audit`) processed all 10,619 station-time rows and found:
+The reusable audit (`python -m velib_lab.audit`) processed all 12,136 station-time rows and found:
 
 - all six discovery, status and station-information body SHA-256 hashes matched their capture metadata;
 - status and information station IDs were valid and unique, and the two sets joined exactly in both directions;
@@ -43,11 +44,11 @@ The reusable audit (`python -m velib_lab.audit`) processed all 10,619 station-ti
 - the duplicate camel-case counts (`numBikesAvailable`, `numDocksAvailable`) agreed with the snake-case fields in every row;
 - latitude/longitude and capacity fields passed the implemented bounds/type checks in all joined station records.
 
-At the latest sample, reported counts were 19,878 bikes (11,772 mechanical; 8,106 e-bikes) and 28,297 free docks; 59 stations reported zero bikes and 68 reported zero docks. `is_renting` and `is_returning` were false at 19 stations each; one station had `is_installed=0`. Zero count, service flags, missing records and timestamps are kept as separate states.
+At the latest sample, reported counts were 19,865 bikes (11,777 mechanical; 8,088 e-bikes) and 28,310 free docks; 59 stations reported zero bikes and 67 reported zero docks. `is_renting` and `is_returning` were false at 19 stations each; one station had `is_installed=0`. Zero count, service flags, missing records and timestamps are kept as separate states.
 
 ## 3. Timestamp freshness is an unresolved data issue
 
-At the latest capture, `last_reported` ages were: minimum **1,262.1 seconds**, p50 **1,365.1 seconds**, p90 **1,630.1 seconds**, p95 **1,737.1 seconds**, p99 **11,265.1 seconds**, maximum **280,748,709.1 seconds** (about 8.9 years). All 1,517 reports were older than five minutes and 15 minutes; 17 were older than one hour; and 14 were older than 24 hours. No report timestamps were missing or in the future in this sample.
+At the latest capture, `last_reported` ages were: minimum **1,568.9 seconds**, p50 **1,671.9 seconds**, p90 **1,937.9 seconds**, p95 **2,047.9 seconds**, p99 **11,565.9 seconds**, maximum **280,749,009.9 seconds** (about 8.9 years). All 1,517 reports were older than five minutes and 15 minutes; 17 were older than one hour; and 14 were older than 24 hours. No report timestamps were missing or in the future in this sample.
 
 The portal labels the feed GBFS 1.0, which the current [GBFS release history](https://github.com/MobilityData/gbfs) marks deprecated. Current GBFS documentation describes `last_reported` as the station's last report to the operator backend and provides a five-minute latency guideline for near-real-time status feeds. This is a useful comparison, not a claim that this legacy feed implements the current version's requirements. Keep source-report age as a quality diagnostic, retain inventory snapshots, and do not drop records or choose a final stale cutoff until the producer's version and timestamp behavior are understood over a longer pilot.
 
@@ -55,7 +56,7 @@ The transport-data listing currently exposes quality indicators and validation r
 
 ## 4. History and interpretation limits
 
-The GBFS feed provides current system state, not a historical archive. No dependable official snapshot archive was verified for this audit. The project is collecting prospective snapshots locally. The seven-capture window spans under 34 minutes (the first-six baseline spans under 22 minutes) and cannot establish typical stockout duration, time-of-day effects, weekly reliability, causality or rebalancing impact.
+The GBFS feed provides current system state, not a historical archive. No dependable official snapshot archive was verified for this audit. The project is collecting prospective snapshots locally. The eight-capture window spans under 39 minutes (the first-six baseline spans under 22 minutes) and cannot establish typical stockout duration, time-of-day effects, weekly reliability, causality or rebalancing impact.
 
 Inventory deltas are net changes. They cannot distinguish customer rides, operator rebalancing, maintenance, disabled vehicles or feed corrections. These endpoints contain no trip trajectories, rider identifiers or operator vehicle routes. Missing or stale data must remain **unknown**, not zero. Before estimating gap duration, declare how long an observation gap may be bridged and how stale records are treated.
 

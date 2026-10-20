@@ -13,10 +13,10 @@ The basic rider-facing idea—predicting whether a Vélib station will have a bi
 ## Feasibility and first data audit — 20–21 October 2026
 
 - The operator-hosted GBFS discovery, `station_information` and `station_status` feeds were reachable by HTTPS without an API key. Station feeds returned HTTP 200 and 1,517 records each.
-- Seven captured snapshots contained 1,517 unique stations apiece. Status/information IDs joined one-to-one; discovery/status/information body hashes matched capture metadata; bike-type totals and duplicate count aliases reconciled; no invalid or negative bike/dock counts were found.
+- Eight captured snapshots contained 1,517 unique stations apiece. Status/information IDs joined one-to-one; discovery/status/information body hashes matched capture metadata; bike-type totals and duplicate count aliases reconciled; no invalid or negative bike/dock counts were found.
 - In two captures 300.9 seconds apart, inventory changed at 253 stations while `last_reported` changed at 58. In the latest capture, all 1,517 report timestamps were more than 15 minutes old, including 14 more than 24 hours old. See the [data audit](docs/DATA_AUDIT.md) before interpreting freshness.
 - The official listing says one-minute updates and labels its feed GBFS 1.0; captured discovery advertised `ttl=3600`. The sampled discovery/status responses lacked feed-level `version` and `last_updated`.
-- The seven-capture window spans under 34 minutes (the first six span under 22 minutes). It validates ingestion and reveals data-quality issues; it does not establish typical reliability, demand or intervention impact.
+- The eight-capture window spans under 39 minutes (the first six span under 22 minutes). It validates ingestion and reveals data-quality issues; it does not establish typical reliability, demand or intervention impact.
 
 See the [data audit](docs/DATA_AUDIT.md), [data dictionary](docs/DATA_DICTIONARY.md), [project work log](docs/WORKLOG.md), [research design](docs/PROJECT_DESIGN.md), [technical stack](docs/TECHNICAL_STACK.md), [operations](docs/OPERATIONS.md) and [roadmap](docs/ROADMAP.md).
 
