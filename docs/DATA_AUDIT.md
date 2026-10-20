@@ -28,6 +28,8 @@ The collector captured two status feeds 60.9 seconds apart on 20 October 2026. B
 
 This is only a two-point probe, but it shows why source timestamps cannot be treated as a complete freshness test: reported inventory changed while per-station timestamps did not. Preserve both retrieval time and `last_reported`, quantify their behavior over a longer pilot, and do not discard data or label a station stale solely from `last_reported` until its semantics are understood.
 
+A third status snapshot, 396.3 seconds after the second, again contained 1,517 stations. Bike and dock counts changed at 342 stations; `last_reported` changed at 77. The newest report timestamp was still about 55 minutes before retrieval, and the oldest was over eight years old. This indicates the inventory feed is dynamic, but its per-station report times are uneven and may not represent the time each count changed. We have enough evidence to proceed with collection and investigation, not enough to set a definitive stale-data cutoff.
+
 ### Quality and licensing
 
 At the time of review, the transport-data page showed 98% availability, 0% compliance, 0% freshness, and 3,042 feed-validation errors. These platform quality indicators are a warning to independently validate timestamps, station coverage, count ranges, schema, and feed outages. They do not by themselves establish that the feed is unusable.
