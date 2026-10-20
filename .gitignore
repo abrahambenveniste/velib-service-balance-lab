@@ -8,6 +8,8 @@ build/
 dist/
 data/raw/
 data/processed/
+data/reference/
+data/logs/
 data/external/
 *.parquet
 *.duckdb
