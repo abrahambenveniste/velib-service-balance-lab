@@ -21,12 +21,12 @@ The basic rider-facing idea—predicting whether a Vélib station will have a bi
 
 See [the data audit](docs/DATA_AUDIT.md), [research design](docs/PROJECT_DESIGN.md), [technical stack](docs/TECHNICAL_STACK.md), and [roadmap](docs/ROADMAP.md).
 
-## Proposed first deliverable
+## Project stages
 
-1. A durable, documented collector for the public GBFS feeds.
-2. A station-time reliability dataset that distinguishes “no usable bike,” “no free dock,” and “station/feed unavailable.”
-3. A public-facing map or report showing the frequency and duration of service gaps by time and area.
-4. A later, explicitly assumption-based rebalancing-policy simulation. It will not be presented as a real operational savings estimate without operator trip and vehicle data.
+1. **Collection (implemented; pilot underway):** a documented collector preserves public GBFS snapshots and freshness metadata.
+2. **Rider reliability:** measure no-bike, no-dock, station-closed, and unknown/stale intervals separately.
+3. **Planning view:** show where and when service gaps recur, including area-level distribution and uncertainty.
+4. **Policy experiment (later):** simulate constrained rebalancing priorities with visible assumptions. Do not present this as operational savings without operator trip and vehicle data.
 
 ## Languages and tools
 
@@ -46,11 +46,10 @@ python -m velib_lab.collector --once
 
 The first capture is written below `data/raw/` with the exact feed responses and a metadata file. Raw snapshots are ignored by Git. Start with single captures; use the [operations guide](docs/OPERATIONS.md) before enabling continuous polling.
 
-The working directory currently has no GitHub remote. The connected GitHub account has separate weather-market-making and F1 repositories; this project should have a dedicated repository rather than being mixed into either. The GitHub connector can write files to an existing repository but does not expose repository creation.
+The source and documentation are published in the dedicated [public GitHub repository](https://github.com/abrahambenveniste/velib-service-balance-lab). Raw snapshots remain local and Git-ignored.
 
 ## Important limitations
 
 Station inventories are snapshots, not trip records. Changes can reflect customer rides, operator rebalancing, maintenance, or feed corrections. They do not identify origin-destination demand or the operator's actual van routes. We will report observed service gaps directly and label any intervention simulation assumptions clearly.
 
 The Vélib status feed is published under ODbL terms. We will preserve attribution and review share-alike requirements before distributing derived databases. See [data sources and terms](docs/DATA_AUDIT.md).
-
