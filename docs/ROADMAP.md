@@ -15,7 +15,7 @@
 
 ## Next milestones
 
-1. **Run a structured freshness pilot.** Compare repeated source timestamps and capture intervals before selecting a lasting cadence.
+1. **Review the active 24-hour freshness pilot.** Status is captured every five minutes; station information refreshes daily. Compare repeated source timestamps and capture intervals before selecting a lasting cadence.
 2. **Collect a useful sample.** Keep raw captures local, log outages/schema changes, and do not mistake repeated responses for new observations.
 3. **Publish baseline service measures.** Show bike and dock access separately, identify stale data, and document spatial aggregation choices.
 4. **Validate both audiences.** Get feedback from riders and people who plan or operate shared mobility; record what helps and what misleads.
@@ -30,3 +30,4 @@
 - 2026-10-21 — Two snapshots 60.9 seconds apart showed inventory changes at 63 stations but no `last_reported` changes. Keep both clocks and investigate timestamp semantics before setting stale-data rules.
 - 2026-10-21 — A third snapshot 396 seconds later showed bike/dock counts change at 342 stations and `last_reported` update at 77; the newest reported time still lagged retrieval by about 55 minutes.
 - 2026-10-21 — Created public repository `abrahambenveniste/velib-service-balance-lab`; published the overview, data audit, design, stack, operations, roadmap, and collector.
+
