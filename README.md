@@ -15,6 +15,7 @@ The basic rider-facing idea—predicting whether a Vélib station will have a bi
 - The operator's public GBFS discovery feed and its `station_information` and `station_status` endpoints responded to live requests without an API key.
 - The live metadata and status feeds each returned 1,517 station records in this check. Status records include mechanical/e-bike counts, free docks, operating flags, and per-station report timestamps.
 - The new Python collector completed an end-to-end capture: HTTP 200 from all three feeds and 1,517 records from each station feed. Its raw capture is local and Git-ignored.
+- A short three-capture probe found changing inventory but uneven, often old `last_reported` timestamps; see the data audit before interpreting freshness.
 - The public data portal says the feeds are refreshed each minute. The GBFS discovery response currently advertises `ttl=3600`; we will measure source timestamps and avoid assuming that every poll contains a new observation.
 - No dependable historical snapshot archive is documented in the feed. The project needs to collect and retain its own history before making claims about patterns or policy impact.
 - The data portal currently shows data-quality warnings. Ingestion will record stale timestamps, missing stations, schema changes, and malformed counts rather than silently treating them as zero.
