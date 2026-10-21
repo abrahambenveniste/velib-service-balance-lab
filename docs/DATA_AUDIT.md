@@ -14,7 +14,7 @@ The operator GBFS source is linked from the [official Vélib open-data listing](
 
 The portal says no key is required and reports a one-minute refresh cadence under GBFS 1.0. The captured discovery TTL was 3,600 seconds. Across the six capture manifests, feed-level `last_updated` and the sampled `Cache-Control`, `Age`, and `ETag` response headers were absent. We therefore store request retrieval time separately and do not equate a poll with a new upstream observation. The provider's discovered URLs are used at runtime; status URL is not guessed from a fixed path.
 
-## 2. Six-capture baseline
+## 2. Initial audit: six-snapshot baseline and two pilot samples
 
 These are **one-time network snapshots**, not rates of service, trip counts or demand. Bike totals include the reported mechanical and e-bike counts. Median source-report age uses the nearest-rank p50 across `last_reported` ages relative to status retrieval time.
 
@@ -48,7 +48,7 @@ At the latest sample, reported counts were 19,865 bikes (11,777 mechanical; 8,08
 
 ## 3. Timestamp freshness is an unresolved data issue
 
-At the latest capture, `last_reported` ages were: minimum **1,568.9 seconds**, p50 **1,671.9 seconds**, p90 **1,937.9 seconds**, p95 **2,047.9 seconds**, p99 **11,565.9 seconds**, maximum **280,749,009.9 seconds** (about 8.9 years). All 1,517 reports were older than five minutes and 15 minutes; 17 were older than one hour; and 14 were older than 24 hours. No report timestamps were missing or in the future in this sample.
+At the final capture in the initial eight-snapshot audit, `last_reported` ages were: minimum **1,568.9 seconds**, p50 **1,671.9 seconds**, p90 **1,937.9 seconds**, p95 **2,047.9 seconds**, p99 **11,565.9 seconds**, maximum **280,749,009.9 seconds** (about 8.9 years). All 1,517 reports were older than five minutes and 15 minutes; 17 were older than one hour; and 14 were older than 24 hours. No report timestamps were missing or in the future in this sample.
 
 The portal labels the feed GBFS 1.0, which the current [GBFS release history](https://github.com/MobilityData/gbfs) marks deprecated. Current GBFS documentation describes `last_reported` as the station's last report to the operator backend and provides a five-minute latency guideline for near-real-time status feeds. This is a useful comparison, not a claim that this legacy feed implements the current version's requirements. Keep source-report age as a quality diagnostic, retain inventory snapshots, and do not drop records or choose a final stale cutoff until the producer's version and timestamp behavior are understood over a longer pilot.
 
@@ -76,4 +76,18 @@ The data portal's reuse listings include [PasDeVélib](https://pasdevelib.app/pa
 ## 7. Licensing and attribution
 
 The listing identifies the dataset with the [Open Database License (ODbL)](https://doc.transport.data.gouv.fr/le-point-d-acces-national/cadre-juridique/conditions-dutilisation-des-donnees/licence-odbl). Preserve attribution to Vélib Métropole / Smovengo. Raw feed history and station-level derived rows stay local; before distributing derived databases, review attribution and share-alike terms. See the [data dictionary](DATA_DICTIONARY.md) for fields and storage provenance.
+
+## 8. Follow-up collection and metadata mismatch — 21 October 2026
+
+The audit was rerun at **2026-10-21 21:01:02 UTC** over 14 capture folders (21,248 station-time rows) from **2026-10-20 22:51:59.572 UTC** through **2026-10-21 21:00:50.233 UTC**. This is not a continuous 24-hour sample: the interval from the 23:35:52.850 UTC capture to the first new capture at 20:58:34.229 UTC was **76,961.4 seconds** (21 hours, 22 minutes, 41.4 seconds). The replacement collector process was still present during the gap, but created no intervening captures; the cause is undetermined. Raw data and run-specific logs remain local and ignored.
+
+The newly observed status feed had **1,519** station records, while the cached station-information reference had **1,517**. This happened in three captures: `20261021T205833113925Z`, `20261021T205834531833Z`, and `20261021T205858853360Z`. Each had two status IDs absent from the cached reference: `27414512` (station code `2017`) and `380891087` (station code `4007`). Both rows had `is_installed=0`, `is_renting=0`, and `is_returning=0` in those status snapshots. This is a join mismatch, not evidence about why those stations were absent from the older information feed.
+
+The information reference used for those three captures had been retrieved at **2026-10-20 23:08:20.756 UTC**. The feed itself advertised `ttl=3600` in its body and corresponding `capture.json` metadata, so the previous 24-hour refresh policy was too long relative to the feed's published TTL. A one-off collection with `--station-info-refresh-hours 1` refreshed it at **2026-10-21 20:59:44.131 UTC**, producing 1,519 information records. The subsequent capture at **21:00:50.233 UTC** had 1,519 status IDs and 1,519 information IDs with no unmatched IDs. The collector default was changed to one hour, and the fresh 24-hour pilot now uses that setting explicitly.
+
+Across all 14 captures, discovery, status and information body hashes matched the hashes in their metadata. Station IDs were valid and unique; count/type/alias checks and operating-flag checks passed. The three mismatched captures also have two rows each without joined coordinates or capacity; later captures report zero invalid coordinates or capacities. The overall bidirectional join check remains **false** because it includes the three historical mismatches above; the per-capture summary reports zero unmatched IDs after the metadata refresh. Fourteen captures contained **13 distinct status body hashes**: the 20:58:34.229 and 20:58:41.462 UTC captures had the same body hash and are retained as separate retrieval events, not treated as independent status changes.
+
+At the latest audited snapshot (**2026-10-21 21:00:50.233 UTC**), the feed reported 19,025 bikes (11,430 mechanical; 7,595 e-bikes), 29,146 free docks, 61 zero-bike stations and 39 zero-dock stations. `last_reported` age was 3,336.2 seconds at the median and 3,606.2 seconds at p90; all 1,519 reports were over 15 minutes old, 160 were over one hour old and 16 were over 24 hours old. There were no missing or future timestamps. These counts describe that snapshot only; the preceding 21-hour gap prevents interpreting them as a five-minute change.
+
+The new hourly-information-refresh pilot began at **2026-10-21 21:00:47 UTC** with status polling every 300 seconds and a 24-hour duration. Its first capture is the snapshot above. Completion is pending; do not describe the pilot as a completed or continuous day until the final interval and logs have been checked.
 

@@ -207,7 +207,7 @@ def get_station_information(
 def capture_once(
     output_dir: Path,
     timeout_seconds: float,
-    station_info_refresh_hours: float = 24,
+    station_info_refresh_hours: float = 1,
 ) -> Path:
     started = utc_now()
     capture_id = started.strftime("%Y%m%dT%H%M%S") + f"{started.microsecond:06d}Z"
@@ -310,8 +310,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--station-info-refresh-hours",
         type=float,
-        default=24,
-        help="maximum age of the separately stored station-information snapshot (default: 24)",
+        default=1,
+        help="maximum age in hours of the station-information snapshot (default: 1)",
     )
     parser.add_argument(
         "--duration-hours",
@@ -351,3 +351,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

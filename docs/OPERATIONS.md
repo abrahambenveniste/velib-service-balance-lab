@@ -18,7 +18,7 @@ Each capture makes requests in this order:
 
 1. `GET` the GBFS discovery URL.
 2. Select the advertised English feed URLs for `station_information` and `station_status`.
-3. Reuse a local station-information body if its recorded URL matches and it was retrieved less than 24 hours ago; otherwise fetch and store a new version.
+3. Reuse a local station-information body if its recorded URL matches and it was retrieved less than one hour ago; otherwise fetch and store a new version. The one-hour maximum matches the observed station-information `ttl=3600`.
 4. `GET` the current station-status feed.
 5. Write exact response bodies and `capture.json` into a temporary directory, then atomically move it into the dated capture directory.
 
@@ -48,26 +48,34 @@ All `data/raw/`, `data/reference/`, `data/processed/` and `data/logs/` paths are
 
 ## Pilot cadence and monitoring
 
-The currently selected pilot command is five-minute status polling for 24 hours, with station information refreshed at most daily:
+The currently selected pilot command is five-minute status polling for 24 hours, with station information refreshed at most hourly:
 
 ```powershell
-.\.venv\Scripts\python.exe -m velib_lab.collector --interval-seconds 300 --duration-hours 24
+.\.venv\Scripts\python.exe -m velib_lab.collector --interval-seconds 300 --duration-hours 24 --station-info-refresh-hours 1
 ```
 
 This cadence is an experiment setting, not a claim about the upstream update rate. The portal says one-minute updates, while discovery advertises `ttl=3600` and status report timestamps are often older. In the six-snapshot baseline, status JSON was about 464 KB per poll; 288 polls imply roughly 133.6 MB/day of status payloads before filesystem overhead.
 
-For an attended run, keep stdout/stderr visible. For a background Windows run, write to a **run-specific** log path, record its process-tree root and UTC start time, and check the process tree and most recent capture before treating the pilot as active. The initial 24-hour run produced two captures five minutes apart, then no longer had a collector process on the next check; that run was incomplete and must not be described as a full day. A replacement began at 2026-10-20 23:25:43 UTC with `collector-pilot-rerun.*` logs. It had two successful captures by 23:30:45 UTC, 300.9 seconds apart, and was still running with empty stderr at 23:31:03 UTC. The replacement has not completed 24 hours.
+For an attended run, keep stdout/stderr visible. For a background Windows run, write to a **run-specific** log path, record its process-tree root and UTC start time, and check the age of the latest capture as well as the process tree before treating the pilot as active. A live process alone does not prove collection is progressing.
+
+The first 24-hour attempt ended after two captures and was incomplete. A replacement began at 2026-10-20 23:25:43 UTC. It produced captures at 23:25:45, 23:30:45 and 23:35:52 UTC, then produced no further capture until 2026-10-21 20:58:41 UTC, although its process tree was still present. The cause of this 21-hour gap is unknown. We stopped that process tree after a fresh one-off request confirmed the feed was reachable. The one-off capture at 20:58:34 UTC and the resumed replacement capture at 20:58:41 UTC had the same status-body hash; both are retained, but count as one distinct status payload. A short-lived collector launch produced a 20:58:59 UTC capture before metadata refresh was changed.
+
+The station-information cache used by those three 20:58 captures was 21.8 hours old and contained 1,517 IDs, while status contained 1,519. A forced refresh at 20:59:44 UTC returned 1,519 information records and resolved the join for later captures. Both feeds advertise `ttl=3600`, so the collector default and active command now refresh the information snapshot hourly.
+
+The current run started at **2026-10-21 21:00:47 UTC** using the command below. Its first status capture completed at 21:00:50.233 UTC with 1,519 status and information IDs and a complete join. At the latest check it was still active; if uninterrupted, its 24-hour stop time is 2026-10-22 21:00:47 UTC. Its logs are `data/logs/collector-pilot-hourly-info-20261021.stdout.log` and `.stderr.log` (ignored locally). The historical gap means this is a fresh run, not a continuation of the previous 24-hour window.
 
 Example background launch (run once, then verify one collector launch tree and its run-specific log):
 
 ```powershell
 $project = (Get-Location).Path
 $python = Join-Path $project '.venv\Scripts\python.exe'
-$stdout = Join-Path $project 'data\logs\collector-pilot-rerun.stdout.log'
-$stderr = Join-Path $project 'data\logs\collector-pilot-rerun.stderr.log'
+$runId = (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmss'Z'")
+$stdout = Join-Path $project "data\logs\collector-pilot-hourly-info-$runId.stdout.log"
+$stderr = Join-Path $project "data\logs\collector-pilot-hourly-info-$runId.stderr.log"
 New-Item -ItemType Directory -Force -Path (Split-Path $stdout) | Out-Null
 $process = Start-Process -FilePath $python -ArgumentList @(
-  '-m', 'velib_lab.collector', '--interval-seconds', '300', '--duration-hours', '24'
+  '-m', 'velib_lab.collector', '--interval-seconds', '300', '--duration-hours', '24',
+  '--station-info-refresh-hours', '1'
 ) -WorkingDirectory $project -WindowStyle Hidden -RedirectStandardOutput $stdout `
   -RedirectStandardError $stderr -PassThru
 $process.Id

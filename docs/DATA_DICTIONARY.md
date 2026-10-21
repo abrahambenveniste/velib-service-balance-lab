@@ -9,7 +9,7 @@ All requests are unauthenticated HTTPS `GET` requests returning UTF-8 JSON. The 
 | Feed | Current URL observed | Purpose | Captured locally as |
 |---|---|---|---|
 | GBFS discovery | `https://velib-metropole-opendata.smovengo.cloud/opendata/Velib_Metropole/gbfs.json` | Advertises URLs for the system's feeds | `gbfs.json` in every capture |
-| Station information | `https://velib-metropole-opendata.smovengo.cloud/opendata/Velib_Metropole/station_information.json` | Station identity, location, capacity and descriptive metadata | Initially per capture; now a dated reference snapshot, refreshed at most daily |
+| Station information | `https://velib-metropole-opendata.smovengo.cloud/opendata/Velib_Metropole/station_information.json` | Station identity, location, capacity and descriptive metadata | Dated reference snapshot, refreshed when older than one hour to match the observed `ttl=3600` |
 | Station status | `https://velib-metropole-opendata.smovengo.cloud/opendata/Velib_Metropole/station_status.json` | Current available bikes, docks, operating flags and station report time | `station_status.json` in every capture |
 
 The public listing states that access needs no API key, labels the feed GBFS 1.0, and says the data is updated each minute. The six captured discovery responses advertised `ttl=3600`; their discovery and status payloads did not contain a feed-level `last_updated` or `version`. These are different pieces of evidence and are retained separately. The provider's discovery data exposed `gbfs`, `system_information`, `station_information`, and `station_status` feed names.

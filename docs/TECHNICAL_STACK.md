@@ -18,7 +18,7 @@ The stack is deliberately small until the collected data justifies more infrastr
 | Source | Request pattern | Authentication | Role |
 |---|---|---|---|
 | Vélib GBFS discovery | HTTPS `GET` on each poll; parse advertised feed URLs | None | Discover current endpoint URLs and record TTL |
-| Vélib station information | HTTPS `GET` on initial retrieval and at most every 24 hours thereafter | None | Station metadata and coordinates |
+| Vélib station information | HTTPS `GET` on initial retrieval and at most every hour thereafter (matches observed `ttl=3600`) | None | Station metadata and coordinates |
 | Vélib station status | HTTPS `GET` every pilot poll (300-second interval) | None | Current bike/dock counts, flags and report times |
 
 The direct endpoints are listed in `docs/DATA_DICTIONARY.md`; the portal listing is linked from `docs/DATA_AUDIT.md`. Source bodies are stored locally with UTC request times and SHA-256 hashes. The analyst can reproduce data-quality checks offline using `velib_lab.audit`.
