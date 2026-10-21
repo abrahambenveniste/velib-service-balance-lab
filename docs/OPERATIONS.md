@@ -62,7 +62,7 @@ The first 24-hour attempt ended after two captures and was incomplete. A replace
 
 The station-information cache used by those three 20:58 captures was 21.8 hours old and contained 1,517 IDs, while status contained 1,519. A forced refresh at 20:59:44 UTC returned 1,519 information records and resolved the join for later captures. Both feeds advertise `ttl=3600`, so the collector default and active command now refresh the information snapshot hourly.
 
-The current run started at **2026-10-21 21:00:47 UTC** using the command below. Its first status capture completed at 21:00:50.233 UTC with 1,519 status and information IDs and a complete join. At the latest check it was still active; if uninterrupted, its 24-hour stop time is 2026-10-22 21:00:47 UTC. Its logs are `data/logs/collector-pilot-hourly-info-20261021.stdout.log` and `.stderr.log` (ignored locally). The historical gap means this is a fresh run, not a continuation of the previous 24-hour window.
+The current run started at **2026-10-21 21:00:47 UTC** using the command below. Its first two status captures, at 21:00:50.233 and 21:05:51.265 UTC, were 301.0 seconds apart and each joined 1,519 status IDs to 1,519 information IDs. At the 21:06:15 UTC audit it was active with empty stderr; if uninterrupted, its 24-hour stop time is 2026-10-22 21:00:47 UTC. Its logs are `data/logs/collector-pilot-hourly-info-20261021.stdout.log` and `.stderr.log` (ignored locally). The historical gap means this is a fresh run, not a continuation of the previous 24-hour window.
 
 Example background launch (run once, then verify one collector launch tree and its run-specific log):
 

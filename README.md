@@ -13,9 +13,9 @@ The basic rider-facing idea—predicting whether a Vélib station will have a bi
 ## Feasibility and data audit — 20–21 October 2026
 
 - The operator-hosted GBFS discovery, `station_information` and `station_status` feeds were reachable by HTTPS without an API key. The current sample returned HTTP 200 and 1,519 records in both station feeds.
-- The 21:01 UTC audit covered 14 captures / 21,248 station-time rows with 13 distinct status-body hashes. Body hashes, unique IDs, count aliases, bike-type totals and operating flags passed. Three captures used a 21.8-hour-old, 1,517-record station-information reference against a 1,519-record status feed; the two missing IDs appeared after metadata refresh. Later captures join 1,519-to-1,519.
-- The latest sample in that audit (21 October, 21:00:50 UTC) reports 19,025 bikes (11,430 mechanical; 7,595 e-bikes), 29,146 free docks, 61 zero-bike stations and 39 zero-dock stations. These are point-in-time counts, not trends or service rates.
-- All 1,519 `last_reported` timestamps in that sample were over 15 minutes old; 160 were over one hour and 16 over 24 hours. Median report age was 55.6 minutes. See the [data audit](docs/DATA_AUDIT.md) for definitions and limits.
+- The 21:06 UTC audit covered 15 captures / 22,767 station-time rows with 14 distinct status-body hashes. Body hashes, unique IDs, count aliases, bike-type totals and operating flags passed. Three captures used a 21.8-hour-old, 1,517-record station-information reference against a 1,519-record status feed; the two missing IDs appeared after metadata refresh. Later captures join 1,519-to-1,519.
+- The latest sample in that audit (21 October, 21:05:51 UTC) reports 18,953 bikes (11,388 mechanical; 7,565 e-bikes), 29,227 free docks, 61 zero-bike stations and 38 zero-dock stations. These are point-in-time counts, not trends or service rates.
+- All 1,519 `last_reported` timestamps in that sample were over 15 minutes old; 952 were over one hour and 16 over 24 hours. Median report age was 60.6 minutes. See the [data audit](docs/DATA_AUDIT.md) for definitions and limits.
 - The official listing says one-minute updates and labels its feed GBFS 1.0; discovery and station-information feeds advertised `ttl=3600`. The collector now refreshes station information hourly. Sampled status responses lacked feed-level `last_updated` and cache headers.
 - The capture window spans about 22 hours but includes a 21-hour gap. It is not a continuous or completed 24-hour series and does not establish typical reliability, demand or intervention impact.
 

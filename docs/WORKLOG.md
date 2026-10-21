@@ -113,3 +113,11 @@ For each new collection or analysis session, append: UTC start/end; commands and
 
 **Repository update:** publish the reviewed collector change and update `README.md`, `docs/DATA_AUDIT.md`, `docs/DATA_DICTIONARY.md`, `docs/OPERATIONS.md`, `docs/TECHNICAL_STACK.md`, and this work log together on `main` through the connected GitHub Git Data API (blobs, tree, commit, expected-head ref update). Do not publish raw captures, manifests, local logs, CSVs or station-level audit outputs.
 
+### 21 October 2026 21:06 UTC — first regular interval after restart
+
+Re-ran the documented standard-library audit against the 15 local capture folders. It processed **22,767 station-time rows** and found **14 distinct status hashes**. The new pilot's captures `20261021T210048814462Z` and `20261021T210550255055Z` were retrieved **301.0 seconds apart**. Both feed requests returned HTTP 200; each status/information snapshot had 1,519 unique IDs and a complete join. The second snapshot also had zero invalid coordinate/capacity counts, zero missing/future report timestamps, and a new status-body hash. The aggregate bidirectional-join flag remains false only because it includes the three earlier 1,519-to-1,517 mismatches; those two IDs have since appeared in station information.
+
+At the second snapshot, reported inventory was 18,953 bikes (11,388 mechanical; 7,565 e-bikes) and 29,227 docks, with 61 zero-bike and 38 zero-dock stations. Median report age was **3,637.3 seconds** and p90 **3,907.3 seconds**; all 1,519 report timestamps exceeded 15 minutes, 952 exceeded one hour and 16 exceeded 24 hours. No missing or future report timestamps occurred. These are point-in-time values; do not bridge the earlier 21-hour gap to infer a five-minute change.
+
+At **2026-10-21 21:06:15 UTC**, collector root PID 25112 and its child were present, stdout had two capture paths (88 bytes), and stderr remained empty. The run is incomplete and scheduled for 24 hours from 21:00:47 UTC if the host remains available. The audit outputs are local and ignored. The public README, data audit, operations guide and work log were updated to this checkpoint; no raw data was published.
+
